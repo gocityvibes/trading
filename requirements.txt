@@ -1,5 +1,2 @@
 flask
-openai
-requests
-alpaca-trade-api
-gunicorn
+flask-cors
