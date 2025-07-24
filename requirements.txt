@@ -1,6 +1,5 @@
 flask
-gunicorn
-requests
 openai
+requests
 alpaca-trade-api
-python-dotenv
+gunicorn
