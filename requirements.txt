@@ -1,2 +1,5 @@
+alpaca-trade-api
 flask
 flask-cors
+gunicorn==21.2.0
+openai==0.28
