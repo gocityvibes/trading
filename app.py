@@ -17,7 +17,3 @@ def trade_log():
 
 if __name__ == "__main__":
     app.run()
-
-@app.route('/status', methods=['GET'])
-def status():
-    return jsonify({"status": "scanning"})
