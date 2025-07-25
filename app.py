@@ -1,6 +1,9 @@
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import threading
+import time
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -19,9 +22,6 @@ def start_bot():
             time.sleep(10)
 
     threading.Thread(target=scanning_loop, daemon=True).start()
-
-    global bot_running
-    bot_running = True
     return jsonify({"message": "Bot started"}), 200
 
 @app.route("/stop", methods=["POST"])
