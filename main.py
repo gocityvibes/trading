@@ -3,10 +3,8 @@ import openai
 import requests
 from alpaca_trade_api.rest import REST, TimeFrame
 from flask import Flask, jsonify
-from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
 
 ALPACA_KEY = os.getenv("ALPACA_KEY")
 ALPACA_SECRET = os.getenv("ALPACA_SECRET")
