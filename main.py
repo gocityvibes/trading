@@ -26,3 +26,19 @@ def trade():
 @app.route("/log")
 def get_trade_log():
     return jsonify({"log": "Sample trade log. GPT filters go here."})
+
+@app.get("/trade-log")
+async def trade_log():
+    return {"log": trade_log_data}  # Replace with real log source
+
+@app.post("/start")
+async def start_bot():
+    global bot_running
+    bot_running = True
+    return {"message": "Bot started"}
+
+@app.post("/stop")
+async def stop_bot():
+    global bot_running
+    bot_running = False
+    return {"message": "Bot stopped"}
