@@ -1,5 +1,5 @@
-openai==0.28
 alpaca-trade-api
 flask
 flask-cors
 gunicorn
+openai==0.28
