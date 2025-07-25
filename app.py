@@ -5,25 +5,28 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-bot_status = {"running": False}
+bot_running = False
 trade_log = []
 
-@app.route("/start", methods=["GET"])
-def start():
-    if not bot_status["running"]:
-        bot_status["running"] = True
-        trade_log.append("Bot started.")
-        return jsonify({"message": "Bot started"}), 200
-    return jsonify({"message": "Bot already running"}), 200
+@app.route("/start", methods=["POST"])
+def start_bot():
+    global bot_running
+    bot_running = True
+    return jsonify({"message": "Bot started"}), 200
 
-@app.route("/stop", methods=["GET"])
-def stop():
-    if bot_status["running"]:
-        bot_status["running"] = False
-        trade_log.append("Bot stopped.")
-        return jsonify({"message": "Bot stopped"}), 200
-    return jsonify({"message": "Bot already stopped"}), 200
+@app.route("/stop", methods=["POST"])
+def stop_bot():
+    global bot_running
+    bot_running = False
+    return jsonify({"message": "Bot stopped"}), 200
 
 @app.route("/trade-log", methods=["GET"])
 def get_log():
     return jsonify({"log": trade_log}), 200
+
+@app.route("/status", methods=["GET"])
+def status():
+    return jsonify({"running": bot_running}), 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
