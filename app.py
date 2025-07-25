@@ -18,7 +18,7 @@ alpaca = REST(ALPACA_KEY, ALPACA_SECRET, base_url='https://paper-api.alpaca.mark
 
 # APP SETUP
 app = Flask(__name__)
-CORS(app, origins=["https://subtle-twilight-946787.netlify.app"])
+CORS(app, origins=["https://subtle-twilight-946787.netlify.app", "https://tradetestbot.netlify.app"])
 
 # STATE
 trading_active = False
