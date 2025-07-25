@@ -17,9 +17,13 @@ def start_bot():
     bot_running = True
 
     def scanning_loop():
-        while bot_running:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Scanning tickers...")
-            time.sleep(10)
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Bot started scanning.")
+        try:
+            while bot_running:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Scanning tickers...")
+                time.sleep(10)
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Scanning loop crashed: {e}")
 
     threading.Thread(target=scanning_loop, daemon=True).start()
     return jsonify({"message": "Bot started"}), 200
