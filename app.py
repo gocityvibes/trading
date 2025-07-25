@@ -12,17 +12,17 @@ trade_log = []
 def start_bot():
     global bot_running
     bot_running = True
-    import threading
-import time
-from datetime import datetime
 
-def scanning_loop():
-    while bot_running:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Scanning tickers...")
-        time.sleep(10)
+    def scanning_loop():
+        while bot_running:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Scanning tickers...")
+            time.sleep(10)
 
-threading.Thread(target=scanning_loop, daemon=True).start()
-return jsonify({"message": "Bot started"}), 200
+    threading.Thread(target=scanning_loop, daemon=True).start()
+
+    global bot_running
+    bot_running = True
+    return jsonify({"message": "Bot started"}), 200
 
 @app.route("/stop", methods=["POST"])
 def stop_bot():
