@@ -130,3 +130,28 @@ def filter_stock(symbol):
     }
 
     return jsonify(result)
+
+
+import time
+
+@app.route("/scan", methods=["POST"])
+def scan_all():
+    data = request.get_json()
+    tickers = data.get("tickers", [])
+    results = []
+
+    for symbol in tickers:
+        try:
+            r = requests.get(f"http://localhost:5000/filter/{symbol}")
+            result = r.json()
+            if result.get("passes"):
+                results.append(result)
+        except Exception as e:
+            results.append({
+                "symbol": symbol,
+                "status": "ERROR",
+                "message": str(e)
+            })
+        time.sleep(1)  # Respect Taapi.io Pro rate limit
+
+    return jsonify(results)
