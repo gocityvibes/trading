@@ -1,5 +1,2 @@
-# Forwarding to main.py for compatibility
-from main import app
-
-if __name__ == "__main__":
-    app.run()
+# This file is present for compatibility but does nothing.
+# All actual logic runs from main.py

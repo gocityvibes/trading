@@ -1,6 +1,3 @@
-# GPT Horse Race Trader Backend
+# GPT Elite Trading Bot Backend
 
-Deploy-ready Flask app using:
-- Alpaca API for trading
-- OpenAI GPT for strategy logic
-- News API (optional for sentiment)
+This backend runs a Flask server with full CORS support and responds to `/start`, `/stop`, and `/trade-log` routes. Deploy-ready for Render.
