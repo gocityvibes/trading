@@ -231,3 +231,12 @@ def execute_trade():
             "status": "ERROR",
             "message": str(e)
         })
+
+@app.route("/trade-log", methods=["GET"])
+def get_trade_log():
+    try:
+        with open("trade_log.json", "r") as f:
+            trades = f.read()
+        return app.response_class(trades, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"status": "ERROR", "message": str(e)})
