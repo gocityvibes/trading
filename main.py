@@ -1,67 +1,28 @@
+import os
+import time
+import requests
+import openai
+import alpaca_trade_api as tradeapi
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import threading
-import time
-from gpt_logic import analyze_symbol
-from risk_manager import place_trade
 
 app = Flask(__name__)
 CORS(app)
 
-bot_active = False
-TRADE_LOG = []
-WATCHLIST = []
+# API Keys
+TAAPI_API_KEY = os.getenv("TAAPI_API_KEY")
+GPT_API_KEY = os.getenv("OPENAI_API_KEY")
+ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
+ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
+ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
-@app.route('/start', methods=['POST'])
-def start_bot():
-    global bot_active
-    bot_active = True
-    WATCHLIST.clear()
-    WATCHLIST.extend(request.json.get("symbols", []))
-
-    thread = threading.Thread(target=run_scan)
-    thread.start()
-    return jsonify({"status": "Bot started", "symbols": WATCHLIST})
-
-@app.route('/stop', methods=['POST'])
-def stop_bot():
-    global bot_active
-    bot_active = False
-    return jsonify({"status": "Bot stopped"})
-
-@app.route('/trade-log', methods=['GET'])
-def trade_log():
-    return jsonify(TRADE_LOG)
-
-def run_scan():
-    global bot_active
-    for symbol in WATCHLIST:
-        if not bot_active:
-            break
-        try:
-            result = analyze_symbol(symbol)
-            if result["score"] >= 90 and result["float"] < 100_000_000 and result["sentiment"] == "bullish" and result["pattern_confirmed"]:
-                trade = place_trade(symbol, result)
-                TRADE_LOG.append({"symbol": symbol, "status": "TRADE_PLACED", "details": trade})
-            else:
-                TRADE_LOG.append({"symbol": symbol, "status": "SKIPPED", "reason": "Did not meet Elite Mode criteria", "details": result})
-        except Exception as e:
-            TRADE_LOG.append({"symbol": symbol, "status": "ERROR", "message": str(e)})
-        time.sleep(1)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
-import requests
-
-# 👉 Taapi.io API Key placeholder (replace this with your actual Pro key later)
-TAAPI_API_KEY = "your_pro_api_key_here"
-TAAPI_BASE = "https://api.taapi.io"
+openai.api_key = GPT_API_KEY
+api = tradeapi.REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL, api_version='v2')
 
 @app.route("/indicators/<symbol>", methods=["GET"])
 def get_indicators(symbol):
-    interval = "1h"  # Adjustable
+    interval = "1h"
+    TAAPI_BASE = "https://api.taapi.io"
 
     def fetch(endpoint, params={}):
         params.update({
@@ -83,13 +44,12 @@ def get_indicators(symbol):
         "ema21": fetch("ema", {"optInTimePeriod": 21}),
         "ema50": fetch("ema", {"optInTimePeriod": 50}),
     }
-
     return jsonify(data)
-
 
 @app.route("/filter/<symbol>", methods=["GET"])
 def filter_stock(symbol):
     interval = "1h"
+    TAAPI_BASE = "https://api.taapi.io"
 
     def fetch(endpoint, params={}):
         params.update({
@@ -104,7 +64,6 @@ def filter_stock(symbol):
         except Exception as e:
             return {"error": str(e)}
 
-    # Fetch indicators
     rsi = fetch("rsi").get("value", 100)
     macd_data = fetch("macd")
     macd = macd_data.get("valueMACD", 0)
@@ -113,7 +72,6 @@ def filter_stock(symbol):
     ema21 = fetch("ema", {"optInTimePeriod": 21}).get("value", 0)
     ema50 = fetch("ema", {"optInTimePeriod": 50}).get("value", 0)
 
-    # Apply filter rules
     pass_rsi = rsi < 30
     pass_macd = macd > signal
     pass_ema = ema9 > ema21 > ema50
@@ -130,9 +88,6 @@ def filter_stock(symbol):
     }
 
     return jsonify(result)
-
-
-import time
 
 @app.route("/scan", methods=["POST"])
 def scan_all():
@@ -152,16 +107,9 @@ def scan_all():
                 "status": "ERROR",
                 "message": str(e)
             })
-        time.sleep(1)  # Respect Taapi.io Pro rate limit
+        time.sleep(1)
 
     return jsonify(results)
-
-
-import openai
-
-# Set your GPT API key here or load from env
-GPT_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = GPT_API_KEY
 
 @app.route("/score", methods=["POST"])
 def score_trades():
@@ -177,7 +125,6 @@ def score_trades():
         ema21 = stock.get("ema21")
         ema50 = stock.get("ema50")
 
-        # Prompt for GPT-4o
         prompt = f"""
 Evaluate this trade setup and give a confidence score (0-100). Only approve if score ≥ 90.
 
@@ -188,11 +135,11 @@ EMA9: {ema9}
 EMA21: {ema21}
 EMA50: {ema50}
 
-Also check:
-- Float size < 100M (assume YES)
-- Bullish sentiment (assume YES)
-- SPY/QQQ market mood is positive (assume YES)
-- Pattern looks like breakout (assume YES)
+Assume:
+- Float size < 100M
+- Bullish sentiment
+- Positive market mood
+- Pattern breakout structure
 
 Respond only with JSON:
 {{
@@ -221,3 +168,36 @@ Respond only with JSON:
             })
 
     return jsonify(approved)
+
+@app.route("/trade", methods=["POST"])
+def execute_trade():
+    data = request.get_json()
+    symbol = data.get("symbol")
+
+    try:
+        barset = api.get_latest_trade(symbol)
+        price = float(barset.price)
+        quantity = int(500 / price)
+
+        order = api.submit_order(
+            symbol=symbol,
+            qty=quantity,
+            side='buy',
+            type='market',
+            time_in_force='gtc'
+        )
+
+        return jsonify({
+            "symbol": symbol,
+            "qty": quantity,
+            "price": price,
+            "status": "submitted",
+            "order_id": order.id
+        })
+
+    except Exception as e:
+        return jsonify({
+            "symbol": symbol,
+            "status": "ERROR",
+            "message": str(e)
+        })
