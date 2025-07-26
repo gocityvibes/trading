@@ -194,20 +194,35 @@ def execute_trade():
         price = float(barset.price)
         quantity = int(500 / price)
 
+        take_profit_price = round(price * 1.10, 2)
+        stop_loss_price = round(price * 0.95, 2)
+
         order = api.submit_order(
             symbol=symbol,
             qty=quantity,
             side='buy',
             type='market',
-            time_in_force='gtc'
+            time_in_force='gtc',
+            order_class='bracket',
+            take_profit={'limit_price': take_profit_price},
+            stop_loss={'stop_price': stop_loss_price}
         )
 
         return jsonify({
             "symbol": symbol,
             "qty": quantity,
             "price": price,
+            "take_profit": take_profit_price,
+            "stop_loss": stop_loss_price,
             "status": "submitted",
             "order_id": order.id
+        })
+
+    except Exception as e:
+        return jsonify({
+            "symbol": symbol,
+            "status": "ERROR",
+            "message": str(e)
         })
 
     except Exception as e:
