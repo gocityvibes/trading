@@ -85,3 +85,48 @@ def get_indicators(symbol):
     }
 
     return jsonify(data)
+
+
+@app.route("/filter/<symbol>", methods=["GET"])
+def filter_stock(symbol):
+    interval = "1h"
+
+    def fetch(endpoint, params={}):
+        params.update({
+            "secret": TAAPI_API_KEY,
+            "exchange": "binance",
+            "symbol": f"{symbol}/USDT",
+            "interval": interval
+        })
+        try:
+            r = requests.get(f"{TAAPI_BASE}/{endpoint}", params=params)
+            return r.json()
+        except Exception as e:
+            return {"error": str(e)}
+
+    # Fetch indicators
+    rsi = fetch("rsi").get("value", 100)
+    macd_data = fetch("macd")
+    macd = macd_data.get("valueMACD", 0)
+    signal = macd_data.get("valueMACDSignal", 0)
+    ema9 = fetch("ema", {"optInTimePeriod": 9}).get("value", 0)
+    ema21 = fetch("ema", {"optInTimePeriod": 21}).get("value", 0)
+    ema50 = fetch("ema", {"optInTimePeriod": 50}).get("value", 0)
+
+    # Apply filter rules
+    pass_rsi = rsi < 30
+    pass_macd = macd > signal
+    pass_ema = ema9 > ema21 > ema50
+
+    result = {
+        "symbol": symbol,
+        "rsi": rsi,
+        "macd": macd,
+        "signal": signal,
+        "ema9": ema9,
+        "ema21": ema21,
+        "ema50": ema50,
+        "passes": pass_rsi and pass_macd and pass_ema
+    }
+
+    return jsonify(result)
