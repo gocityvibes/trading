@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import threading
@@ -52,3 +51,37 @@ def run_scan():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+import requests
+
+# 👉 Taapi.io API Key placeholder (replace this with your actual Pro key later)
+TAAPI_API_KEY = "your_pro_api_key_here"
+TAAPI_BASE = "https://api.taapi.io"
+
+@app.route("/indicators/<symbol>", methods=["GET"])
+def get_indicators(symbol):
+    interval = "1h"  # Adjustable
+
+    def fetch(endpoint, params={}):
+        params.update({
+            "secret": TAAPI_API_KEY,
+            "exchange": "binance",
+            "symbol": f"{symbol}/USDT",
+            "interval": interval
+        })
+        try:
+            r = requests.get(f"{TAAPI_BASE}/{endpoint}", params=params)
+            return r.json()
+        except Exception as e:
+            return {"error": str(e)}
+
+    data = {
+        "rsi": fetch("rsi"),
+        "macd": fetch("macd"),
+        "ema9": fetch("ema", {"optInTimePeriod": 9}),
+        "ema21": fetch("ema", {"optInTimePeriod": 21}),
+        "ema50": fetch("ema", {"optInTimePeriod": 50}),
+    }
+
+    return jsonify(data)
