@@ -1,0 +1,6 @@
+Flask
+flask-cors
+openai
+alpaca-trade-api
+requests
+gunicorn
