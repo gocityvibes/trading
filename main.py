@@ -19,6 +19,21 @@ ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 openai.api_key = GPT_API_KEY
 api = tradeapi.REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL, api_version='v2')
 
+# Bot status
+bot_active = False
+
+@app.route("/start", methods=["POST"])
+def start_bot():
+    global bot_active
+    bot_active = True
+    return jsonify({"status": "started"})
+
+@app.route("/stop", methods=["POST"])
+def stop_bot():
+    global bot_active
+    bot_active = False
+    return jsonify({"status": "stopped"})
+
 @app.route("/indicators/<symbol>", methods=["GET"])
 def get_indicators(symbol):
     interval = "1h"
