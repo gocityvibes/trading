@@ -155,3 +155,69 @@ def scan_all():
         time.sleep(1)  # Respect Taapi.io Pro rate limit
 
     return jsonify(results)
+
+
+import openai
+
+# Set your GPT API key here or load from env
+GPT_API_KEY = os.getenv("OPENAI_API_KEY")
+openai.api_key = GPT_API_KEY
+
+@app.route("/score", methods=["POST"])
+def score_trades():
+    data = request.get_json()
+    candidates = data.get("candidates", [])
+
+    approved = []
+    for stock in candidates:
+        symbol = stock.get("symbol", "UNKNOWN")
+        rsi = stock.get("rsi")
+        macd = stock.get("macd")
+        ema9 = stock.get("ema9")
+        ema21 = stock.get("ema21")
+        ema50 = stock.get("ema50")
+
+        # Prompt for GPT-4o
+        prompt = f"""
+Evaluate this trade setup and give a confidence score (0-100). Only approve if score ≥ 90.
+
+Symbol: {symbol}
+RSI: {rsi}
+MACD: {macd}
+EMA9: {ema9}
+EMA21: {ema21}
+EMA50: {ema50}
+
+Also check:
+- Float size < 100M (assume YES)
+- Bullish sentiment (assume YES)
+- SPY/QQQ market mood is positive (assume YES)
+- Pattern looks like breakout (assume YES)
+
+Respond only with JSON:
+{{
+  "symbol": "...",
+  "score": 0-100,
+  "reason": "...",
+  "approve": true/false
+}}
+"""
+
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            gpt_reply = response["choices"][0]["message"]["content"]
+            approved.append({
+                "symbol": symbol,
+                "gpt_reply": gpt_reply
+            })
+        except Exception as e:
+            approved.append({
+                "symbol": symbol,
+                "error": str(e)
+            })
+
+    return jsonify(approved)
