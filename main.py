@@ -1,48 +1,28 @@
-
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-from threading import Thread
-import time
+import os
+import openai
+import requests
+from alpaca_trade_api.rest import REST, TimeFrame
+from flask import Flask, jsonify
 
 app = Flask(__name__)
-CORS(app)
 
-trading_active = False
-trade_log_data = []
+ALPACA_KEY = os.getenv("ALPACA_KEY")
+ALPACA_SECRET = os.getenv("ALPACA_SECRET")
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-def run_trading_loop():
-    global trading_active, trade_log_data
-    while trading_active:
-        # Simulated trade logic
-        trade_log_data.append({
-            "ticker": "SIM",
-            "score": 93,
-            "entry": 100.0,
-            "exit": 108.0
-        })
-        time.sleep(10)
+openai.api_key = OPENAI_API_KEY
+alpaca = REST(ALPACA_KEY, ALPACA_SECRET, base_url='https://paper-api.alpaca.markets')
 
-@app.route("/start", methods=["POST"])
-def start_trading():
-    global trading_active
-    if not trading_active:
-        trading_active = True
-        Thread(target=run_trading_loop).start()
-        return jsonify({"status": "started"})
-    return jsonify({"status": "already running"})
+@app.route("/trade")
+def trade():
+    try:
+        positions = alpaca.list_positions()
+        account = alpaca.get_account()
+        return jsonify({"positions": [p.symbol for p in positions], "equity": account.equity})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-@app.route("/stop", methods=["POST"])
-def stop_trading():
-    global trading_active
-    trading_active = False
-    return jsonify({"status": "stopped"})
-
-@app.route("/trade-log")
-def trade_log():
-    return jsonify({
-        "status": "success",
-        "trades": trade_log_data
-    })
-
-if __name__ == "__main__":
-    app.run()
+@app.route("/log")
+def get_trade_log():
+    return jsonify({"log": "Sample trade log. GPT filters go here."})

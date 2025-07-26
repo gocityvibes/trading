@@ -1,3 +1,6 @@
-# GPT Trading Bot Backend
+# GPT Horse Race Trader Backend
 
-This backend supports /start, /stop, and /trade-log for simulating or running trades.
+Deploy-ready Flask app using:
+- Alpaca API for trading
+- OpenAI GPT for strategy logic
+- News API (optional for sentiment)
