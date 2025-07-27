@@ -1,3 +1,16 @@
+from datetime import datetime, time
+
+def within_trading_hours():
+    now = datetime.utcnow().time()
+    market_open = time(13, 31)   # 9:31 AM ET
+    last_entry = time(19, 0)     # 3:00 PM ET
+    return market_open <= now <= last_entry
+
+def should_flatten_positions():
+    now = datetime.utcnow().time()
+    flatten_cutoff = time(19, 45)  # 3:45 PM ET
+    return now >= flatten_cutoff
+
 import os
 import time
 import requests
