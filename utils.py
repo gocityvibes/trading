@@ -1,6 +1,3 @@
-
-
-
 import os
 import requests
 
@@ -33,3 +30,29 @@ def send_trade_to_alpaca(symbol, notional, client_order_id):
             "status": response.status_code,
             "response": response.text
         }
+
+
+import json
+from datetime import datetime
+
+def log_trade(symbol, gpt35_score, gpt4o_score, expected_price, fill_price):
+    log_entry = {
+        "symbol": symbol,
+        "timestamp": datetime.utcnow().isoformat(),
+        "gpt_3_5_score": gpt35_score,
+        "gpt_4o_score": gpt4o_score,
+        "expected_price": expected_price,
+        "fill_price": fill_price,
+        "slippage_pct": round(((fill_price - expected_price) / expected_price) * 100, 2) if expected_price else None
+    }
+
+    try:
+        with open("trade_log.json", "r") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = []
+
+    data.append(log_entry)
+
+    with open("trade_log.json", "w") as f:
+        json.dump(data, f, indent=2)

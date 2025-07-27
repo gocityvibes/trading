@@ -256,3 +256,13 @@ def get_trade_log():
         return app.response_class(trades, mimetype='application/json')
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)})
+
+
+@app.route('/trade-log')
+def get_trade_log():
+    import json
+    try:
+        with open("trade_log.json", "r") as f:
+            return json.load(f)
+    except Exception as e:
+        return {"error": "Could not load trade log", "details": str(e)}
