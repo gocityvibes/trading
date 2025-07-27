@@ -1,25 +1,24 @@
+class RiskManager:
+    def __init__(self):
+        self.max_open_trades = 3
+        self.open_trades = []
 
+    def can_open_new_trade(self):
+        return len(self.open_trades) < self.max_open_trades
 
+    def register_trade(self, symbol):
+        self.open_trades.append(symbol)
 
-def passes_pre_filters(stock):
-    # Example structure of stock: {'symbol': 'AAPL', 'price': 170, 'volume': 30000000, 'avg_volume': 15000000, 'float': 90000000, 'news': ''}
+    def close_trade(self, symbol):
+        if symbol in self.open_trades:
+            self.open_trades.remove(symbol)
 
-    # Price range check
-    if stock['price'] < 1 or stock['price'] > 100:
-        return False
+    def get_trade_size(self):
+        return 500  # Fixed trade size in dollars
 
-    # Float filter (hard rule)
-    if stock['float'] > 100_000_000:
-        return False
-
-    # Volume surge filter (1.5x average volume)
-    if stock['volume'] < 1.5 * stock['avg_volume']:
-        return False
-
-    # No dilution/lawsuit/downgrade via news (simple keyword match)
-    landmine_keywords = ['dilution', 'lawsuit', 'downgrade']
-    news = stock.get('news', '').lower()
-    if any(keyword in news for keyword in landmine_keywords):
-        return False
-
-    return True
+    def get_risk_limits(self):
+        return {
+            'stop_loss_pct': -5,
+            'take_profit_pct': 10,
+            'trailing_stop': False  # Optional: set to True if needed
+        }
