@@ -260,3 +260,51 @@ def get_trade_log():
             return json.load(f)
     except Exception as e:
         return {"error": "Could not load trade log", "details": str(e)}
+
+
+@app.route('/daily-summary')
+def daily_summary():
+    import json
+    from datetime import datetime
+
+    try:
+        with open("trade_log.json", "r") as f:
+            data = json.load(f)
+    except:
+        return {"error": "Unable to load trade log"}
+
+    today = datetime.utcnow().date().isoformat()
+    wins = 0
+    losses = 0
+    total_pnl = 0
+    trades_today = 0
+
+    for trade in data:
+        if trade["timestamp"].startswith(today):
+            trades_today += 1
+            if trade.get("outcome") == "WIN":
+                wins += 1
+                total_pnl += (trade.get("exit_price", 0) - trade.get("fill_price", 0))
+            elif trade.get("outcome") == "LOSS":
+                losses += 1
+                total_pnl += (trade.get("exit_price", 0) - trade.get("fill_price", 0))
+
+    win_rate = round((wins / trades_today) * 100, 2) if trades_today else 0
+
+    return {
+        "date": today,
+        "total_trades": trades_today,
+        "wins": wins,
+        "losses": losses,
+        "win_rate_pct": win_rate,
+        "pnl": round(total_pnl, 2)
+    }
+
+@app.route('/download-log')
+def download_log():
+    from flask import send_file
+    csv_path = export_log_to_csv()
+    if csv_path and os.path.exists(csv_path):
+        return send_file(csv_path, as_attachment=True)
+    else:
+        return {"error": "Unable to generate CSV file"}

@@ -22,3 +22,7 @@ class RiskManager:
             'take_profit_pct': 10,
             'trailing_stop': False  # Optional: set to True if needed
         }
+
+
+def get_trailing_stop_pct(self):
+    return 2  # Trailing stop activates after +10% and follows with -2%

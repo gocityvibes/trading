@@ -56,3 +56,41 @@ def log_trade(symbol, gpt35_score, gpt4o_score, expected_price, fill_price):
 
     with open("trade_log.json", "w") as f:
         json.dump(data, f, indent=2)
+
+
+import csv
+import os
+
+def close_trade_with_outcome(symbol, fill_price, exit_price):
+    try:
+        with open("trade_log.json", "r") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return
+
+    for entry in reversed(data):
+        if entry["symbol"] == symbol and "exit_price" not in entry:
+            entry["exit_price"] = exit_price
+            entry["outcome"] = "WIN" if exit_price > fill_price else "LOSS"
+            break
+
+    with open("trade_log.json", "w") as f:
+        json.dump(data, f, indent=2)
+
+def export_log_to_csv():
+    try:
+        with open("trade_log.json", "r") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+
+    fieldnames = ["symbol", "timestamp", "gpt_3_5_score", "gpt_4o_score", "expected_price", "fill_price", "slippage_pct", "exit_price", "outcome"]
+    csv_path = "trade_log.csv"
+
+    with open(csv_path, "w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
+
+    return csv_path
