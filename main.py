@@ -1,3 +1,6 @@
+def format_order_id(symbol, score, flags):
+    return f"{symbol}_score{score}_{flags}"
+
 from datetime import datetime, time
 
 def within_trading_hours():
