@@ -258,6 +258,9 @@ def get_trade_log():
         return jsonify({"status": "ERROR", "message": str(e)})
 
 
+
+
+
 @app.route('/trade-log')
 def get_trade_log():
     import json
