@@ -39,64 +39,29 @@ def get_live_price(symbol):
 def scan_stocks_in_chunks():
     check_and_close_trades()
     try:
-    with open("trade_log.json", "r") as f:
-    trades = json.load(f)
+        with open("trade_log.json", "r") as f:
+            trades = json.load(f)
     except:
-    trades = []
+        trades = []
 
     for trade in trades:
-    if trade.get("status") == "OPEN":
-    current_price = get_live_price(trade["symbol"])
-    entry = trade["entry"]
-    target = entry * 1.03  # 3% take profit
-
-    if current_price >= target:
-    trade["status"] = "CLOSED"
-    trade["exit"] = current_price
-    trade["profit"] = round(current_price - entry, 2)
-    trade["closed_time"] = time.strftime('%I:%M %p')
-
-    with open("trade_log.json", "w") as f:
-    json.dump(trades, f, indent=2)
-# ====== LIVE PRICE PATCH END ======
-
-
-# ====== SCAN LOOP PATCH BEGIN ======
-import threading
-
-running = False
-
-
-# ====== CHUNKED SCANNING PATCH BEGIN ======
+        print(f"⏳ Evaluating trade: {trade['symbol']}")
+        # Add logic here if needed
 def get_top_100_stocks():
     # Replace with your real stock fetching logic
     return [f"STOCK{i}" for i in range(1, 101)]
 
 def scan_stocks_in_chunks():
-    all_stocks = get_top_100_stocks()
-    for i in range(0, len(all_stocks), 20):
-    chunk = all_stocks[i:i+20]
-    print(f"🔍 Scanning chunk: {chunk}")
-    filtered = gpt35_scan(chunk)
-    for symbol in filtered:
-    score = gpt40_score(symbol)
-    if score >= 85:
-    print(f"✅ Trade triggered: {symbol} | Score: {score}")
-    execute_trade(symbol, score)
-    time.sleep(1)  # small delay between chunks if needed
+    check_and_close_trades()
+    try:
+        with open("trade_log.json", "r") as f:
+            trades = json.load(f)
+    except:
+        trades = []
 
-# Replace scan_stocks_in_chunks()
-        check_and_close_trades() call with this new logic
-# Called inside scan_loop
-# ====== CHUNKED SCANNING PATCH END ======
-
-
-# ====== FULL GPT SCAN PATCH BEGIN ======
-import openai
-import random
-
-openai.api_key = "your-gpt-api-key-here"  # TODO: Replace with your actual GPT key
-
+    for trade in trades:
+        print(f"⏳ Evaluating trade: {trade['symbol']}")
+        # Add logic here if needed
 def gpt35_scan(symbols):
     # Simulate GPT-3.5 scanning logic
     scanned = []
