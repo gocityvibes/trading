@@ -1,3 +1,41 @@
+
+# ====== Real GPT Integration ======
+import openai
+
+openai.api_key = "YOUR_OPENAI_API_KEY"  # Replace this with your real key
+
+def gpt35_scan(symbols):
+    filtered = []
+    for symbol in symbols:
+        prompt = f"Is the stock {symbol} showing strong breakout signals today based on price action, trend, or volume?"
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            answer = response.choices[0].message.content.lower()
+            if "yes" in answer or "likely" in answer:
+                filtered.append(symbol)
+        except Exception as e:
+            print(f"GPT-3.5 error on {symbol}: {e}")
+    return filtered
+
+def gpt40_score(symbol):
+    prompt = f"Score the stock {symbol} from 0 to 100 based on breakout potential, float size, and news sentiment. Only return the number."
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        answer = response.choices[0].message.content.strip()
+        score = int(''.join(filter(str.isdigit, answer)))
+        return score
+    except Exception as e:
+        print(f"GPT-4o error on {symbol}: {e}")
+        return 0
+# ====== End GPT Integration ======
+
+
 def format_order_id(symbol, score, flags):
     return f"{symbol}_score{score}_{flags}"
 
