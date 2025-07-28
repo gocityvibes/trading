@@ -22,6 +22,43 @@ import alpaca_trade_api as tradeapi
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+
+import json
+import time
+
+# ====== LIVE PRICE PATCH BEGIN ======
+def get_live_price(symbol):
+    # TODO: Replace this with your actual price API call
+    mock_prices = {
+        "TSLA": 327.56,
+        "AAPL": 198.12,
+        "NVDA": 914.32
+    }
+    return mock_prices.get(symbol, 0)
+
+def check_and_close_trades():
+    try:
+        with open("trade_log.json", "r") as f:
+            trades = json.load(f)
+    except:
+        trades = []
+
+    for trade in trades:
+        if trade.get("status") == "OPEN":
+            current_price = get_live_price(trade["symbol"])
+            entry = trade["entry"]
+            target = entry * 1.03  # 3% take profit
+
+            if current_price >= target:
+                trade["status"] = "CLOSED"
+                trade["exit"] = current_price
+                trade["profit"] = round(current_price - entry, 2)
+                trade["closed_time"] = time.strftime('%I:%M %p')
+
+    with open("trade_log.json", "w") as f:
+        json.dump(trades, f, indent=2)
+# ====== LIVE PRICE PATCH END ======
+
 app = Flask(__name__)
 CORS(app)
 
@@ -39,7 +76,12 @@ api = tradeapi.REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL, api_vers
 bot_active = False
 
 @app.route("/start", methods=["POST"])
-def start_bot():
+def wrapped_start():
+    check_and_close_trades()
+    return start_bot()
+
+@app.route("/original_start", methods=["POST"])
+def start_bot():  # renamed to avoid route clash
     global bot_active
     bot_active = True
     return jsonify({"status": "started"})
