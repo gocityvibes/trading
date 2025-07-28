@@ -36,8 +36,7 @@ def get_live_price(symbol):
     }
     return mock_prices.get(symbol, 0)
 
-def scan_stocks_in_chunks():
-    check_and_close_trades()
+def check_and_close_trades():
     try:
         with open("trade_log.json", "r") as f:
             trades = json.load(f)
@@ -45,96 +44,20 @@ def scan_stocks_in_chunks():
         trades = []
 
     for trade in trades:
-        print(f"⏳ Evaluating trade: {trade['symbol']}")
-        # Add logic here if needed
-def get_top_100_stocks():
-    # Replace with your real stock fetching logic
-    return [f"STOCK{i}" for i in range(1, 101)]
+        if trade.get("status") == "OPEN":
+            current_price = get_live_price(trade["symbol"])
+            entry = trade["entry"]
+            target = entry * 1.03  # 3% take profit
 
-def scan_stocks_in_chunks():
-    check_and_close_trades()
-    try:
-        with open("trade_log.json", "r") as f:
-            trades = json.load(f)
-    except:
-        trades = []
-
-    for trade in trades:
-        print(f"⏳ Evaluating trade: {trade['symbol']}")
-        # Add logic here if needed
-def gpt35_scan(symbols):
-    # Simulate GPT-3.5 scanning logic
-    scanned = []
-    for sym in symbols:
-        # Pretend GPT-3.5 is filtering and returns maybe half
-        if random.random() > 0.5:
-            scanned.append(sym)
-    return scanned
-
-def gpt40_score(symbol):
-    # Simulate GPT-4o scoring (placeholder, replace with real GPT call)
-    score = random.randint(80, 100)
-    return score
-
-def execute_trade(symbol, score):
-    entry_price = get_live_price(symbol)
-    trade = {
-        "symbol": symbol,
-        "entry": entry_price,
-        "status": "OPEN",
-        "score": score,
-        "time": time.strftime('%I:%M %p')
-    }
-    try:
-        with open("trade_log.json", "r") as f:
-            trades = json.load(f)
-    except:
-        trades = []
-
-    trades.append(trade)
+            if current_price >= target:
+                trade["status"] = "CLOSED"
+                trade["exit"] = current_price
+                trade["profit"] = round(current_price - entry, 2)
+                trade["closed_time"] = time.strftime('%I:%M %p')
 
     with open("trade_log.json", "w") as f:
         json.dump(trades, f, indent=2)
-# ====== FULL GPT SCAN PATCH END ======
-
-
-# ====== AUTO SHUTDOWN PATCH BEGIN ======
-def is_past_shutdown_time():
-    now = datetime.datetime.now()
-    shutdown_hour = 15  # 3 PM
-    shutdown_minute = 30
-    if now.hour > shutdown_hour or (now.hour == shutdown_hour and now.minute >= shutdown_minute):
-        return True
-    return False
-# ====== AUTO SHUTDOWN PATCH END ======
-
-def scan_loop():
-    global running
-    while running:
-        if is_past_shutdown_time():
-            print("🛑 Auto-shutdown: Market close reached (3:30 PM CT)")
-            running = False
-            break
-        print("🔄 Running trade scan and close cycle...")
-        scan_stocks_in_chunks()
-        check_and_close_trades()
-        # TODO: Add GPT scan and trade entry here if unfrozen
-        time.sleep(60)  # Wait 60 seconds between scans
-
-@app.route("/start", methods=["POST"])
-def start_bot_loop():
-    global running
-    if not running:
-        running = True
-        threading.Thread(target=scan_loop).start()
-    return jsonify({"status": "Bot is now running continuously."})
-
-@app.route("/stop", methods=["POST"])
-def stop_bot_loop():
-    global running
-    running = False
-    return jsonify({"status": "Bot has been stopped."})
-# ====== SCAN LOOP PATCH END ======
+# ====== LIVE PRICE PATCH END ======
 
 app = Flask(__name__)
 CORS(app)
@@ -153,12 +76,11 @@ api = tradeapi.REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL, api_vers
 bot_active = False
 
 @app.route("/start", methods=["POST"])
-# Old wrapper removed
-    scan_stocks_in_chunks()
-        check_and_close_trades()
-    # Replaced by scan_loop
+def wrapped_start():
+    check_and_close_trades()
+    return start_bot()
 
-
+@app.route("/original_start", methods=["POST"])
 def start_bot():  # renamed to avoid route clash
     global bot_active
     bot_active = True
