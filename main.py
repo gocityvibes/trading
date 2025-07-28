@@ -37,7 +37,7 @@ def get_live_price(symbol):
     return mock_prices.get(symbol, 0)
 
 def scan_stocks_in_chunks():
-        check_and_close_trades():
+        check_and_close_trades()
     try:
         with open("trade_log.json", "r") as f:
             trades = json.load(f)
