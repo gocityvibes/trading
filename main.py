@@ -1,12 +1,3 @@
-
-from itertools import cycle, islice
-
-SYMBOL_POOL = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'AMD', 'INTC', 'NFLX', 'BABA', 'CRM', 'ADBE', 'PYPL', 'ORCL', 'CSCO', 'QCOM', 'AVGO', 'TXN', 'MU', 'PLTR', 'UBER', 'LYFT', 'SNAP', 'SHOP', 'COIN', 'SQ', 'ROKU', 'ZM', 'DDOG', 'DOCU', 'TWLO', 'NET', 'TEAM', 'MDB', 'FSLY', 'CRWD', 'ZS', 'OKTA', 'PANW', 'WDAY', 'NOW', 'SEDG', 'ENPH', 'RUN', 'SPWR', 'BLNK', 'CHPT', 'LCID', 'RIVN', 'NIO', 'XPEV', 'LI', 'JD', 'PDD', 'TME', 'BIDU', 'IQ', 'NTES', 'SINA', 'WISH', 'VIPS', 'FUTU', 'TAL', 'EDU', 'JD', 'BILI', 'WB', 'GDS', 'HUYA', 'YY', 'LEJU', 'ATHM', 'BEKE', 'TIGR', 'YMM', 'ZH', 'KC', 'ZTO', 'QTT', 'KWEB', 'KR', 'COST', 'WMT', 'TGT', 'HD', 'LOW', 'BBY', 'M', 'JWN', 'SBUX', 'CMG', 'DPZ', 'YUM', 'WEN', 'QSR', 'SHAK', 'MCD', 'DNUT', 'PTLO']
-SYMBOL_ROTATOR = cycle(SYMBOL_POOL)
-
-def get_next_symbols(n=20):
-    return list(islice(SYMBOL_ROTATOR, n))
-
 def format_order_id(symbol, score, flags):
     return f"{symbol}_score{score}_{flags}"
 
