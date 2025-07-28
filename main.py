@@ -37,27 +37,27 @@ def get_live_price(symbol):
     return mock_prices.get(symbol, 0)
 
 def scan_stocks_in_chunks():
-        check_and_close_trades()
+    check_and_close_trades()
     try:
-        with open("trade_log.json", "r") as f:
-            trades = json.load(f)
+    with open("trade_log.json", "r") as f:
+    trades = json.load(f)
     except:
-        trades = []
+    trades = []
 
     for trade in trades:
-        if trade.get("status") == "OPEN":
-            current_price = get_live_price(trade["symbol"])
-            entry = trade["entry"]
-            target = entry * 1.03  # 3% take profit
+    if trade.get("status") == "OPEN":
+    current_price = get_live_price(trade["symbol"])
+    entry = trade["entry"]
+    target = entry * 1.03  # 3% take profit
 
-            if current_price >= target:
-                trade["status"] = "CLOSED"
-                trade["exit"] = current_price
-                trade["profit"] = round(current_price - entry, 2)
-                trade["closed_time"] = time.strftime('%I:%M %p')
+    if current_price >= target:
+    trade["status"] = "CLOSED"
+    trade["exit"] = current_price
+    trade["profit"] = round(current_price - entry, 2)
+    trade["closed_time"] = time.strftime('%I:%M %p')
 
     with open("trade_log.json", "w") as f:
-        json.dump(trades, f, indent=2)
+    json.dump(trades, f, indent=2)
 # ====== LIVE PRICE PATCH END ======
 
 
@@ -75,15 +75,15 @@ def get_top_100_stocks():
 def scan_stocks_in_chunks():
     all_stocks = get_top_100_stocks()
     for i in range(0, len(all_stocks), 20):
-        chunk = all_stocks[i:i+20]
-        print(f"🔍 Scanning chunk: {chunk}")
-        filtered = gpt35_scan(chunk)
-        for symbol in filtered:
-            score = gpt40_score(symbol)
-            if score >= 85:
-                print(f"✅ Trade triggered: {symbol} | Score: {score}")
-                execute_trade(symbol, score)
-        time.sleep(1)  # small delay between chunks if needed
+    chunk = all_stocks[i:i+20]
+    print(f"🔍 Scanning chunk: {chunk}")
+    filtered = gpt35_scan(chunk)
+    for symbol in filtered:
+    score = gpt40_score(symbol)
+    if score >= 85:
+    print(f"✅ Trade triggered: {symbol} | Score: {score}")
+    execute_trade(symbol, score)
+    time.sleep(1)  # small delay between chunks if needed
 
 # Replace scan_stocks_in_chunks()
         check_and_close_trades() call with this new logic
