@@ -11,13 +11,9 @@ yfinance==0.2.40
 SQLAlchemy==2.0.32
 psycopg[binary]==3.2.1
 
-# APIs
+# APIs (GPT)
 openai==1.40.6
 anthropic==0.34.2
-
-# Web/Control Layer
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
 
 # Utilities
 python-dotenv==1.0.1
