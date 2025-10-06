@@ -1,19 +1,17 @@
 
-# Trading Control + Candle Status + Backfill
+# Trading Control + Candle Status + Backfill2 (period-based intraday)
 
-Endpoints:
+Adds `/candles/backfill2` which uses Yahoo's **period** parameter for intraday:
+- 1m -> up to 7d
+- 2m/5m/15m/30m -> up to ~60d
+- 60m -> up to ~730d
+
+Examples:
+- /candles/backfill2?key=...&symbol=AAPL&tf=1m&period=5d
+- /candles/backfill2?key=...&symbol=ES=F&tf=5m&period=60d
+
+Other endpoints:
 - /health
-- /control/get?action=start|stop|status&key=YOUR_KEY
+- /control/get?action=start|stop|status&key=...
 - /control-panel
-- /candles/init?key=YOUR_KEY
 - /candles/status
-- /candles/backfill?key=YOUR_KEY&symbol=ES=F&tf=1m&days=60
-
-Backfill uses yfinance. Intervals supported: 1m, 5m, 15m.
-
-Render env:
-- CONTROL_KEY=jcpclov3$$
-- DATABASE_URL=postgresql://<user>:<pass>@<host>/<db>
-
-Start command:
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
