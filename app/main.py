@@ -3,16 +3,18 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
-import os
+import os, json
 from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 
 try:
     import yfinance as yf
+    import pandas as pd
 except Exception:
     yf = None
+    pd = None
 
-app = FastAPI(title="Trading Control + Candle Status + Backfill2")
+app = FastAPI(title="Trading Control + Diagnostics")
 
 app.add_middleware(
     CORSMiddleware,
@@ -68,17 +70,15 @@ def control_panel():
     html = f"""
 <!doctype html><html><head><meta charset='utf-8'><title>Control Panel</title></head>
 <body style='font-family:sans-serif;margin:40px;'>
-<h2>Trading Control Panel</h2>
+<h2>Trading Diagnostics Panel</h2>
 <div style='display:flex; gap:10px; flex-wrap:wrap'>
   <a href='/control/get?action=start&key={CONTROL_KEY_URLSAFE}'><button>▶ Start</button></a>
   <a href='/control/get?action=stop&key={CONTROL_KEY_URLSAFE}'><button>⏹ Stop</button></a>
   <a href='/control/get?action=status&key={CONTROL_KEY_URLSAFE}'><button>📊 Status</button></a>
   <a href='/health'><button>🩺 Health</button></a>
   <a href='/candles/status'><button>🕯️ Candles</button></a>
-</div>
-<div style='margin-top:16px'>
-  <a href='/candles/backfill2?key={CONTROL_KEY_URLSAFE}&symbol=AAPL&tf=1m&period=5d'><button>⤵ Backfill2 AAPL 1m 5d</button></a>
-  <a href='/candles/backfill2?key={CONTROL_KEY_URLSAFE}&symbol=ES=F&tf=5m&period=60d'><button>⤵ Backfill2 ES 5m 60d</button></a>
+  <a href='/candles/yfcheck?symbol=AAPL&tf=60m&period=5d'><button>🔍 YF Check AAPL 60m 5d</button></a>
+  <a href='/candles/mockload?key={CONTROL_KEY_URLSAFE}&rows=50&symbol=TEST&tf=1m'><button>🧪 Mockload 50</button></a>
 </div>
 <p style='margin-top:14px;color:#555'>Key (URL-encoded): <code>{CONTROL_KEY_URLSAFE}</code></p>
 </body></html>
@@ -101,39 +101,35 @@ def candles_status():
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
-@app.get("/candles/backfill2")
-def candles_backfill2(
+@app.get("/candles/yfcheck")
+def yfcheck(symbol: str = Query("AAPL"), tf: str = Query("60m"), period: str = Query("5d")):
+    if yf is None:
+        return {"ok": False, "error": "yfinance/pandas not installed"}
+    try:
+        df = yf.download(tickers=symbol, interval=tf, period=period, progress=False, auto_adjust=False)
+        # Return only metadata, not full data (to keep response small)
+        if df is None or df.empty:
+            return {"ok": True, "rows": 0, "columns": [], "head": []}
+        df = df.reset_index()
+        cols = list(df.columns)
+        head = df.head(5).astype(str).to_dict(orient="records")
+        return {"ok": True, "rows": int(df.shape[0]), "columns": cols, "head": head}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.get("/candles/mockload")
+def mockload(
     key: str = Query(...),
-    symbol: str = Query("AAPL"),
+    rows: int = Query(50, ge=1, le=2000),
+    symbol: str = Query("TEST"),
     tf: str = Query("1m"),
-    period: str = Query("5d"),
 ):
     check_key(key)
     if not DATABASE_URL:
         return {"ok": False, "error": "DATABASE_URL not set"}
-    if yf is None:
-        return {"ok": False, "error": "yfinance not installed"}
-
-    # Validate interval support and Yahoo limitations
-    valid_tfs = {"1m": "7d", "2m": "60d", "5m": "60d", "15m": "60d", "30m": "60d", "60m": "730d"}
-    if tf not in valid_tfs:
-        return {"ok": False, "error": "unsupported tf; try 1m,2m,5m,15m,30m,60m"}
-    # Clamp period if user asks too much for given interval
-    max_period = valid_tfs[tf]
-    # Very light validation; rely on Yahoo to error for odd periods
-    # Examples: 1m <= 7d, 5m/15m/30m <= 60d
-
+    url = norm_db_url(DATABASE_URL)
     try:
-        df = yf.download(tickers=symbol, interval=tf, period=period, progress=False, auto_adjust=False)
-        if df is None or df.empty:
-            return {"ok": False, "rows": 0, "note": "no data returned"}
-
-        df = df.reset_index().rename(columns={"Datetime": "ts", "Date": "ts"})
-        ts_col = "ts" if "ts" in df.columns else df.columns[0]
-
-        url = norm_db_url(DATABASE_URL)
         eng = create_engine(url, pool_pre_ping=True)
-        inserted = 0
         with eng.begin() as conn:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS candles_raw (
@@ -147,29 +143,24 @@ def candles_backfill2(
                     close DOUBLE PRECISION NOT NULL,
                     volume BIGINT NOT NULL DEFAULT 0
                 );
-            """))
-            conn.execute(text("""
                 CREATE UNIQUE INDEX IF NOT EXISTS ux_candles_symbol_tf_ts
                 ON candles_raw(symbol, timeframe, timestamp);
             """))
-            for _, r in df.iterrows():
-                ts = r[ts_col]
+            base = datetime.now(timezone.utc) - timedelta(minutes=rows)
+            inserted = 0
+            for i in range(rows):
+                ts = base + timedelta(minutes=i)
+                o = 100 + i * 0.1
+                h = o + 0.5
+                l = o - 0.5
+                c = o + 0.1
+                v = 1000 + i
                 conn.execute(text("""
                     INSERT INTO candles_raw (symbol, timeframe, timestamp, open, high, low, close, volume)
-                    VALUES (:symbol, :timeframe, :timestamp, :open, :high, :low, :close, :volume)
+                    VALUES (:symbol, :tf, :ts, :o, :h, :l, :c, :v)
                     ON CONFLICT (symbol, timeframe, timestamp) DO NOTHING;
-                """), dict(
-                    symbol=symbol,
-                    timeframe=tf,
-                    timestamp=ts if isinstance(ts, str) else getattr(ts, "to_pydatetime", lambda: ts)(),
-                    open=float(r.get("Open", r.get("open", 0))),
-                    high=float(r.get("High", r.get("high", 0))),
-                    low=float(r.get("Low", r.get("low", 0))),
-                    close=float(r.get("Close", r.get("close", 0))),
-                    volume=int(r.get("Volume", r.get("volume", 0)) or 0),
-                ))
+                """), {"symbol": symbol, "tf": tf, "ts": ts, "o": o, "h": h, "l": l, "c": c, "v": v})
                 inserted += 1
-
-        return {"ok": True, "symbol": symbol, "tf": tf, "period": period, "rows_inserted": inserted}
+        return {"ok": True, "inserted": inserted, "symbol": symbol, "tf": tf}
     except Exception as e:
         return {"ok": False, "error": str(e)}

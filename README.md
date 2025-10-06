@@ -1,17 +1,13 @@
 
-# Trading Control + Candle Status + Backfill2 (period-based intraday)
+# Trading Control + Diagnostics
 
-Adds `/candles/backfill2` which uses Yahoo's **period** parameter for intraday:
-- 1m -> up to 7d
-- 2m/5m/15m/30m -> up to ~60d
-- 60m -> up to ~730d
-
-Examples:
-- /candles/backfill2?key=...&symbol=AAPL&tf=1m&period=5d
-- /candles/backfill2?key=...&symbol=ES=F&tf=5m&period=60d
-
-Other endpoints:
+Endpoints:
 - /health
-- /control/get?action=start|stop|status&key=...
+- /control/get?action=start|stop|status&key=YOUR_KEY
 - /control-panel
 - /candles/status
+- /candles/yfcheck?symbol=AAPL&tf=60m&period=5d  -> returns dataframe metadata + head (no DB write)
+- /candles/mockload?key=YOUR_KEY&rows=50&symbol=TEST&tf=1m -> inserts synthetic rows to verify DB pipeline
+
+If yfcheck returns rows > 0 but status stays 0, the DB insert logic is the issue.
+If yfcheck rows = 0 for AAPL/60m/5d, Yahoo is likely blocking or rate-limiting from your server.
